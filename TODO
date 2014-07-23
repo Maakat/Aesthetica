@@ -1,0 +1,15 @@
+Comment everything
+Add a log that prints to a text file, with date, time, etc.
+Add guis 
+	Make box a superclass of imagebox and textbox
+		make textbox load from an image with letters
+Add camera
+Add cubes
+Add height map
+Add particles
+Add true fps
+Convert all of it to VBO's
+(Possibly) Add shaders
+Create player class for items and stuff
+Create inventory system
+Add weapon animations
