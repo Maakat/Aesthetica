@@ -1,21 +1,34 @@
 package com.matisse.engine;
 
+import static org.lwjgl.opengl.GL11.GL_COLOR_BUFFER_BIT;
+import static org.lwjgl.opengl.GL11.GL_DEPTH_BUFFER_BIT;
+import static org.lwjgl.opengl.GL11.GL_DEPTH_TEST;
+import static org.lwjgl.opengl.GL11.GL_MODELVIEW;
+import static org.lwjgl.opengl.GL11.GL_PROJECTION;
+import static org.lwjgl.opengl.GL11.glClear;
+import static org.lwjgl.opengl.GL11.glDisable;
+import static org.lwjgl.opengl.GL11.glEnable;
+import static org.lwjgl.opengl.GL11.glLoadIdentity;
+import static org.lwjgl.opengl.GL11.glMatrixMode;
+import static org.lwjgl.opengl.GL11.*;
+
 import org.lwjgl.LWJGLException;
 import org.lwjgl.opengl.Display;
 import org.lwjgl.opengl.DisplayMode;
+import org.lwjgl.util.glu.GLU;
 
-import com.matisse.world.Game;
+import com.matisse.controller.Camera;
+import com.matisse.vec.Vector3;
+import com.matisse.world.World;
 
 public class Engine {
 	private int width, height, fps;
 	private float fov, near, far;
-	private boolean running;
-	
-	private Renderer renderer;
-	private Game game;
 	private State state;
+	private World world;
+	private Camera camera;
 	
-	public void createWindow(String title, int width, int height, int fps, float fov, float near, float far) {
+	public void create(String title, int width, int height, int fps, float fov, float near, float far) {
 		this.width = width;
 		this.height = height;
 		this.fps = fps;
@@ -23,16 +36,6 @@ public class Engine {
 		this.near = near;
 		this.far = far;
 
-		game = new Game();
-		game.create("null");
-		
-		renderer = new Renderer();
-		renderer.create(this, game);
-		
-		state = State.LOADING;
-		
-		running = false;
-		
 		try {
 			Display.setDisplayMode(new DisplayMode(width, height));
 			Display.setTitle(title);			
@@ -42,25 +45,66 @@ public class Engine {
 			exitOnError("Could not create display.", 0, e);
 		}
 		
-		running = true;
 		state = State.START;
 	}
 	
 	public void run() {
-		
-		while(running) {
-			renderer.update();
+		while(state != State.EXITING) {
+			input();
+			update();
+			render();
 		}
 		exit(0);
 	}
 	
-	public void exit(int status) {
+	private void input() {
+		camera.input();
+		camera.setPosition(new Vector3(camera.getPosition().x, world.calculateHeight(camera.getPosition().x * 2, camera.getPosition().z * 2) * -16, camera.getPosition().z));
+		System.out.println(camera.getPosition().y);
+	}
+	
+	private void update() {
+		
+	}
+	
+	private void render() {
+		clear();
+		render3D();
+		render2D();
+		Display.sync(fps);
+		Display.update();
+	}
+	
+	private void clear() {
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glClearColor(0.5f, 0.5f, 1, 1);
+	}
+	
+	private void render3D() {
+		glMatrixMode(GL_PROJECTION); 
+		glLoadIdentity(); 
+		GLU.gluPerspective(fov, (float) Display.getWidth() / (float) Display.getHeight(), near, far);
+		glEnable(GL_DEPTH_TEST);
+	
+		camera.translate();
+		world.render();
+	}
+	
+	private void render2D() {
+		glMatrixMode(GL_PROJECTION); 
+		glLoadIdentity(); 
+		glOrtho(0, width, height, 0, -1, 1);
+		glMatrixMode(GL_MODELVIEW); 
+		glDisable(GL_DEPTH_TEST);
+	}
+
+	private void exit(int status) {
 		System.out.println("Closing under status: " + status + ".");
 		Display.destroy();
 		System.exit(status);
 	}
 	
-	public void exitOnError(String reason, int status, Exception e) {
+	private void exitOnError(String reason, int status, Exception e) {
 		System.err.println(reason);
 		System.err.println("Closing under status: " + status + ".");
 		Display.destroy();
@@ -68,35 +112,11 @@ public class Engine {
 		System.exit(status);
 	}
 	
-	public void setState(State state) {
-		this.state = state;
-	}
-	
-	public State getState() {
-		return state;
-	}
-
-	public int getWidth() {
-		return width;
-	}
-	
-	public int getHeight() {
-		return height;
-	}
-	
-	public int getFPS() {
-		return fps;
-	}
-	
-	public float getFOV() {
-		return fov;
-	}
-	
-	public float getNear() {
-		return near;
-	}
-	
-	public float getFar() {
-		return far;
+	public void loadGame() {
+		state = State.LOADING;
+		world = new World();
+		world.create(this, "Aesthetica", "resources/textures/height.jpg");
+		camera = new Camera();
+		camera.create(new Vector3(world.getWidth() / 2, -10, world.getLength() / 2), new Vector3(0, 0, 0));							
 	}
 }

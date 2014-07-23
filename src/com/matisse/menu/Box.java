@@ -6,4 +6,12 @@ public class Box {
 	public Box(Vector3 position, Vector3 size, Vector3 color) {
 		
 	}
+	
+	public void update() {
+		
+	}
+	
+	public void render() {
+		
+	}
 }
